@@ -47,27 +47,27 @@ func (a *App) initliazeRoutes() {
 
 func Pong(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte("resp"))
+	_, _ = w.Write([]byte("Pong"))
 }
 
 /**
 创建短链
 */
 func (a *App) createShortLink(w http.ResponseWriter, r *http.Request) {
-	link := r.Form.Get("link")
+	link := r.FormValue("link")
 	valid := validation.Validation{}
-	valid.Required(link, "name")
+	valid.Required(link, "link")
 	if valid.HasErrors() {
-		log.Println("link不存在")
-		return
+		responseErrorMsg(w, modules.StatusError{Code: 500, Err: errors.New("link不存在")})
+	} else {
+		result, err := a.Cli.ShortenUrl(link)
+		if err != nil || result == "" {
+			responseErrorMsg(w, modules.StatusError{Code: 500, Err: err})
+		} else {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(result))
+		}
 	}
-
-	result, err := a.Cli.ShortenUrl(link)
-	if err != nil {
-		responseErrorMsg(w, modules.StatusError{Code: 500, Err: errors.New("redis异常")})
-	}
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(result))
 }
 
 /**
@@ -78,22 +78,27 @@ func (a *App) getShortLinkInfo(w http.ResponseWriter, r *http.Request) {
 	if link == "" {
 		responseErrorMsg(w, modules.StatusError{Code: modules.INVALID_PARAMS, Err: errors.New(modules.MsgFlags[modules.INVALID_PARAMS])})
 	}
+	result, err := a.Cli.ShortLinkInfo(link)
+	if err != nil {
+		responseErrorMsg(w, err)
+	} else {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(result.(string)))
+	}
 }
 
 /**
 重定向信息
 */
 func (a *App) redirect(w http.ResponseWriter, r *http.Request) {
-	//dict := mux.Vars(r)
-	//link := dict["link"]
-	//
-	//result, err := a.Cli.UnShortUrl(link)
-	//url := result.(string)
-	//if err != nil {
-	//
-	//}
-	url := "http://www.baidu.com"
-	http.Redirect(w, r, url, 302)
+	dict := mux.Vars(r)
+	link := dict["link"]
+	result, err := a.Cli.UnShortUrl(link)
+	if err != nil {
+		responseErrorMsg(w, modules.StatusError{Code: modules.INVALID_PARAMS, Err: errors.New(modules.MsgFlags[modules.INVALID_PARAMS])})
+	} else {
+		http.Redirect(w, r, result, 302)
+	}
 }
 
 /**
