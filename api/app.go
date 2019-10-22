@@ -1,12 +1,14 @@
 package api
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/astaxie/beego/validation"
 	"github.com/carl-xiao/short-link-go/middleware"
 	"github.com/carl-xiao/short-link-go/modules"
 	"github.com/gorilla/mux"
+	"html/template"
 	"log"
 	"net/http"
 )
@@ -14,14 +16,7 @@ import (
 type App struct {
 	Router *mux.Router
 	Cli    *modules.RedisClient
-}
-
-type shortReq struct {
-	Url    string
-	Expire int64
-}
-type shortRes struct {
-	Shortlink string
+	Db     *sql.DB
 }
 
 //初始化结构
@@ -30,6 +25,7 @@ func (a *App) Initliaze() {
 	a.Router = mux.NewRouter()
 	a.initliazeRoutes()
 	a.Cli = modules.RedisInit()
+	a.Db = modules.Dbinit()
 }
 
 //初始化路由
@@ -39,6 +35,10 @@ func (a *App) initliazeRoutes() {
 	a.Router.HandleFunc("/api/info", a.getShortLinkInfo).Methods("GET")
 	a.Router.HandleFunc("/{link:[a-zA-Z0-9]{1,12}}", a.redirect).Methods("GET")
 	a.Router.HandleFunc("/api/panic", testPanic).Methods("GET")
+	a.Router.HandleFunc("/index.html", a.index).Methods("GET")
+	//处理静态文件
+	a.Router.Handle("/static/{type}/{file}", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	a.Router.Handle("/favicon.ico", http.StripPrefix("/", http.FileServer(http.Dir("."))))
 
 	m := middleware.Middware{}
 	a.Router.Use(m.RecoverHandler)
@@ -97,7 +97,29 @@ func (a *App) redirect(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		responseErrorMsg(w, modules.StatusError{Code: modules.INVALID_PARAMS, Err: errors.New(modules.MsgFlags[modules.INVALID_PARAMS])})
 	} else {
+		//1 统计短链uv、pv
+		ip := ClientIP(r)
+		//2: Db存放
+		a.storeIp(ip, link)
+		//3: 跳转
 		http.Redirect(w, r, result, 302)
+	}
+}
+func (a *App) index(w http.ResponseWriter, r *http.Request) {
+	tpl := template.New("index.html")
+	var err error
+	tpl, err = tpl.ParseFiles("template/index.html")
+	if err != nil {
+		log.Printf("parse template error. %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(http.StatusText(http.StatusInternalServerError)))
+		return
+	}
+	err = tpl.Execute(w, nil)
+	if err != nil {
+		log.Printf("execute template error. %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(http.StatusText(http.StatusInternalServerError)))
 	}
 }
 

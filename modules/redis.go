@@ -89,7 +89,6 @@ func (r *RedisClient) ShortenUrl(url string) (string, error) {
 	}
 	//生成唯一编码
 	hashId := Encode(id)
-	log.Printf(hashId)
 	//设置hash
 	err = r.Client.Set(fmt.Sprintf(SHORTLINKURL, hashId), url, 0).Err()
 	if err != nil {
