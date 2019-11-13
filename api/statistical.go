@@ -24,7 +24,7 @@ func ClientIP(r *http.Request) string {
 }
 
 const (
-	insertIp = "insert into ip_statistical(ip,short) values(?,?) "
+	insertIp = "insert into ip_statistical(ip,short,total) values(?,?,1) "
 	updateIp = "update ip_statistical set total = total+1 where id=?"
 )
 

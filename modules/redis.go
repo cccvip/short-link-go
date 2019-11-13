@@ -58,6 +58,10 @@ func RedisInit() *RedisClient {
 		Password: password,
 		DB:       database,
 	})
+	_, err = Client.Ping().Result()
+	if err != nil {
+		log.Fatal("redis not connected")
+	}
 	return &RedisClient{Client: Client}
 }
 func (r *RedisClient) ShortenUrl(url string) (string, error) {
@@ -105,7 +109,9 @@ func (r *RedisClient) ShortenUrl(url string) (string, error) {
 
 //查看短地址详细信息
 func (r *RedisClient) ShortLinkInfo(eid string) (interface{}, error) {
-	result, err := r.Client.Get(fmt.Sprintf(SHORTLINKURL, eid)).Result()
+	url := fmt.Sprintf(SHORTLINKURL, eid)
+	log.Print(url)
+	result, err := r.Client.Get(url).Result()
 	if err == redis.Nil {
 		return "", StatusError{Code: 404, Err: errors.New("Not Found this detail")}
 	} else {

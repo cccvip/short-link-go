@@ -57,11 +57,13 @@ func (a *App) createShortLink(w http.ResponseWriter, r *http.Request) {
 	link := r.FormValue("link")
 	valid := validation.Validation{}
 	valid.Required(link, "link")
+	log.Print(link)
 	if valid.HasErrors() {
 		responseErrorMsg(w, modules.StatusError{Code: 500, Err: errors.New("link不存在")})
 	} else {
 		result, err := a.Cli.ShortenUrl(link)
 		if err != nil || result == "" {
+			log.Print(err.Error())
 			responseErrorMsg(w, modules.StatusError{Code: 500, Err: err})
 		} else {
 			w.WriteHeader(http.StatusOK)
@@ -75,6 +77,7 @@ func (a *App) createShortLink(w http.ResponseWriter, r *http.Request) {
 */
 func (a *App) getShortLinkInfo(w http.ResponseWriter, r *http.Request) {
 	link := r.URL.Query().Get("link")
+	log.Print(link)
 	if link == "" {
 		responseErrorMsg(w, modules.StatusError{Code: modules.INVALID_PARAMS, Err: errors.New(modules.MsgFlags[modules.INVALID_PARAMS])})
 	}

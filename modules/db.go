@@ -29,5 +29,10 @@ func Dbinit() *sql.DB {
 	dbUrl.SetMaxOpenConns(100)
 	dbUrl.SetMaxIdleConns(20)
 	dbUrl.SetConnMaxLifetime(time.Second * 30)
+
+	err = dbUrl.Ping()
+	if err != nil {
+		log.Fatal("mysql not connect")
+	}
 	return dbUrl
 }
