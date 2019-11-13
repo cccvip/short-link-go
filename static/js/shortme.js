@@ -25,10 +25,10 @@ function Short(longURLID) {
             console.log(err);
         }
     }).always(function () {
-        $( "#shortURLBlankLine" ).html(shortURL)
+        $( "#short" ).html(shortURL)
         // add shortened qr code
         //document.getElementById("shortenedQR").innerHTML = "";
-        //DisplayQR("shortenedQR", shortURL);
+        DisplayQR("shortURLBlankLine", shortURL);
     })
 }
 
@@ -56,6 +56,6 @@ function Expand(shortURLID) {
         $( "#expandedURLBlankLine" ).html(longURL)
         // clear expanded qr code
         //document.getElementById("expandedQR").innerHTML = "";
-        //DisplayQR("expandedQR", longURL);
+        DisplayQR("unshort", longURL);
     })
 }
